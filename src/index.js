@@ -9,7 +9,9 @@ app.use(cors());
 const schema = gql`
   type Query {
     stations: [Station]
+    station(id: ID!): Station
     lines: [Line]
+    line(id: ID!): Line
   }
 
   type Station {
@@ -42,9 +44,24 @@ const resolvers = {
       });
       return allStations;
     },
+    station: async (parent, { id }) => {
+      const station = await models.Station.findById(id, {
+        include: [
+          { model: models.Line },
+          { model: models.StationCode, as: 'codes' }
+        ]
+      });
+      return station;
+    },
     lines: async () => {
       const allLines = await models.Line.all({ include: models.Station });
       return allLines;
+    },
+    line: async (parent, { id }) => {
+      const line = await models.Line.findById(id, {
+        include: [{ model: models.Station }]
+      });
+      return line;
     }
   }
 };
