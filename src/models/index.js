@@ -2,7 +2,7 @@ import station from './station';
 import stationCode from './stationCode';
 import stationLine from './stationLine';
 import line from './line';
-import sequelize from '../db/sequelize';
+import sequelize from '../config/sequelize';
 import Sequelize from 'sequelize';
 
 export const Station = station(sequelize, Sequelize.DataTypes);
