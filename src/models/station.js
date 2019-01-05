@@ -6,6 +6,8 @@ export default (sequelize, DataTypes) => {
       autoIncrement: true
     },
     name: DataTypes.STRING,
+    lat: DataTypes.FLOAT,
+    lng: DataTypes.FLOAT,
     created_at: DataTypes.DATE,
     updated_at: DataTypes.DATE
   });

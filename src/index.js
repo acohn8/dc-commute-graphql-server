@@ -2,6 +2,7 @@ import cors from 'cors';
 import express from 'express';
 import { ApolloServer, gql } from 'apollo-server-express';
 import * as models from './models/index';
+import fetchTrains from './api/metroHero';
 
 const app = express();
 app.use(cors());
@@ -17,8 +18,11 @@ const schema = gql`
   type Station {
     id: ID!
     name: String!
+    lat: Float!
+    lng: Float!
     lines: [Line]
     codes: [StationCode]
+    trains: [Train]
   }
 
   type StationCode {
@@ -30,6 +34,44 @@ const schema = gql`
     id: ID!
     name: String!
     stations: [Station]
+  }
+
+  type Train {
+    trainId: String
+    realTrainId: String
+    car: String
+    destination: String
+    destinationCode: String
+    destinationName: String
+    group: String
+    line: String
+    locationCode: String
+    locationName: String
+    min: String
+    parentMin: String
+    minutesAway: Float
+    maxMinutesAway: Float
+    directionNumber: Int
+    isScheduled: Boolean
+    numPositiveTags: Int
+    numNegativeTags: Int
+    trackNumber: Int
+    currentStationCode: String
+    currentStationName: String
+    PreviousStationCode: String
+    previousStationName: String
+    secondsSinceLastMoved: Int
+    isCurrentlyHoldingOrSlow: Boolean
+    secondsOffSchedule: Int
+    trainSpeed: Int
+    isNotOnRevenueTrack: Boolean
+    isKeyedDown: Boolean
+    wasKeyedDown: Boolean
+    distanceFromNextStation: Int
+    lat: Float
+    lon: Float
+    direction: Int
+    observedDate: String
   }
 `;
 
@@ -51,6 +93,11 @@ const resolvers = {
           { model: models.StationCode, as: 'codes' }
         ]
       });
+      const stationCodes = station.codes.map(
+        code => code.dataValues.station_code
+      );
+      const trains = fetchTrains(stationCodes);
+      station.trains = trains;
       return station;
     },
     lines: async () => {
