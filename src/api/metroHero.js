@@ -1,13 +1,14 @@
 import fetch from 'node-fetch';
+require('dotenv').config();
 
 const fetchTrains = async stationIds => {
   const trains = await Promise.all(
     stationIds.map(async id => {
       const response = await fetch(
-        'https://dcmetrohero.com/api/v1//metrorail/stations/C01/trains',
+        `https://dcmetrohero.com/api/v1//metrorail/stations/${id}/trains`,
         {
           headers: {
-            apiKey: 'bffa0ad2-d611-4025-a289-2bb5a50ee8e7'
+            apiKey: process.env.METRO_HERO_KEY
           }
         }
       );
@@ -15,7 +16,7 @@ const fetchTrains = async stationIds => {
       return parsedResponse;
     })
   );
-  return trains;
+  return trains[0];
 };
 
 export default fetchTrains;

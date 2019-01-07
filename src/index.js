@@ -3,6 +3,8 @@ import express from 'express';
 import { ApolloServer, gql } from 'apollo-server-express';
 import * as models from './models/index';
 import fetchTrains from './api/metroHero';
+import fetchWeather from './api/weather';
+import addDistanceToStations from './helpers/closestStations';
 
 const app = express();
 app.use(cors());
@@ -13,6 +15,8 @@ const schema = gql`
     station(id: ID!): Station
     lines: [Line]
     line(id: ID!): Line
+    weather(lat: Float!, lng: Float!): Weather
+    trainAndWeather(lat: Float!, lng: Float!): TrainAndWeather
   }
 
   type Station {
@@ -23,6 +27,7 @@ const schema = gql`
     lines: [Line]
     codes: [StationCode]
     trains: [Train]
+    distance: Float
   }
 
   type StationCode {
@@ -73,12 +78,75 @@ const schema = gql`
     direction: Int
     observedDate: String
   }
+
+  type Weather {
+    latitude: Float!
+    longitude: Float!
+    timezone: String!
+    currently: CurrentWeather
+    hourly: HourlyWeather
+  }
+
+  type CurrentWeather {
+    time: Int!
+    summary: String!
+    icon: String!
+    nearestStormDistance: Int!
+    precipIntensity: Float!
+    precipIntensityError: Float!
+    precipProbability: Float!
+    precipType: String!
+    temperature: Float!
+    apparentTemperature: Float!
+    dewPoint: Float!
+    humidity: Float!
+    pressure: Float!
+    windSpeed: Float!
+    windGust: Float!
+    windBearing: Float!
+    cloudCover: Float!
+    uvIndex: Int!
+    visibility: Float!
+    ozone: Float!
+  }
+
+  type HourlyWeather {
+    summary: String!
+    icon: String!
+    data: [HourlyData]
+  }
+
+  type HourlyData {
+    time: Int!
+    summary: String!
+    icon: String!
+    precipIntensity: Float!
+    precipProbability: Float!
+    precipType: String!
+    temperature: Float!
+    apparentTemperature: Float!
+    dewPoint: Float!
+    humidity: Float!
+    pressure: Float!
+    windSpeed: Float!
+    windGust: Float!
+    windBearing: Float!
+    cloudCover: Float!
+    uvIndex: Int!
+    visibility: Float!
+    ozone: Float!
+  }
+
+  type TrainAndWeather {
+    stations: [Station]
+    weather: Weather
+  }
 `;
 
 const resolvers = {
   Query: {
     stations: async () => {
-      const allStations = await models.Station.all({
+      const allStations = await models.Station.findAll({
         include: [
           { model: models.Line },
           { model: models.StationCode, as: 'codes' }
@@ -96,7 +164,7 @@ const resolvers = {
       const stationCodes = station.codes.map(
         code => code.dataValues.station_code
       );
-      const trains = fetchTrains(stationCodes);
+      const trains = await fetchTrains(stationCodes);
       station.trains = trains;
       return station;
     },
@@ -109,6 +177,15 @@ const resolvers = {
         include: [{ model: models.Station }]
       });
       return line;
+    },
+    weather: async (parent, { lat, lng }) => {
+      const weather = await fetchWeather(lat, lng);
+      return { weather };
+    },
+    trainAndWeather: async (parent, { lat, lng }) => {
+      const weather = await fetchWeather(lat, lng);
+      const stations = await addDistanceToStations(lat, lng);
+      return { weather: weather, stations: stations };
     }
   }
 };
