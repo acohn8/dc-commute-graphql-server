@@ -9,5 +9,8 @@ export default (sequelize, DataTypes) => {
     created_at: DataTypes.DATE,
     updated_at: DataTypes.DATE
   });
+  Line.associate = models => {
+    Line.belongsToMany(models.Station, { through: models.StationLine });
+  };
   return Line;
 };

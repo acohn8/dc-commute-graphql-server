@@ -1,22 +1,20 @@
-import fetch from 'node-fetch';
+import { RESTDataSource } from 'apollo-datasource-rest';
 require('dotenv').config();
 
-const fetchTrains = async stationIds => {
-  const trains = await Promise.all(
-    stationIds.map(async id => {
-      const response = await fetch(
-        `https://dcmetrohero.com/api/v1//metrorail/stations/${id}/trains`,
-        {
-          headers: {
-            apiKey: process.env.METRO_HERO_KEY
-          }
-        }
-      );
-      const parsedResponse = await response.json();
-      return parsedResponse;
-    })
-  );
-  return trains[0];
-};
+export class MetroHeroAPI extends RESTDataSource {
+  constructor() {
+    super();
+    this.baseURL = 'https://dcmetrohero.com/api/v1/metrorail';
+    this.apiKey = process.env.METRO_HERO_KEY;
+  }
 
-export default fetchTrains;
+  willSendRequest(request) {
+    request.headers.set('apiKey', this.apiKey);
+  }
+
+  async getTrainTimes(codes) {
+    const times = await this.get(`/stations/trains`);
+    const stationTimes = codes.map(code => times[code]);
+    return stationTimes[0];
+  }
+}

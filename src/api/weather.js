@@ -1,12 +1,16 @@
-import fetch from 'node-fetch';
+import { RESTDataSource } from 'apollo-datasource-rest';
 require('dotenv').config();
 
-const fetchWeather = async (lat, lng) => {
-  const response = await fetch(
-    `https://api.darksky.net/forecast/${process.env.DARKSKY_KEY}/${lat},${lng}`
-  );
-  const parsedResponse = await response.json();
-  return parsedResponse;
-};
+export class DarkSkyAPI extends RESTDataSource {
+  constructor() {
+    super();
+    this.baseURL = `https://api.darksky.net/forecast/${
+      process.env.DARKSKY_KEY
+    }`;
+  }
 
-export default fetchWeather;
+  async getWeather(lat, lng) {
+    const response = await this.get(`/${lat},${lng}`);
+    return response;
+  }
+}

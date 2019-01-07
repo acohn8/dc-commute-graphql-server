@@ -1,4 +1,4 @@
-export default (sequelize, DataTypes) => {
+const station = (sequelize, DataTypes) => {
   const Station = sequelize.define('stations', {
     id: {
       type: DataTypes.INTEGER,
@@ -11,5 +11,11 @@ export default (sequelize, DataTypes) => {
     created_at: DataTypes.DATE,
     updated_at: DataTypes.DATE
   });
+  Station.associate = models => {
+    Station.hasMany(models.StationCode, { as: 'codes' });
+    Station.belongsToMany(models.Line, { through: models.StationLine });
+  };
   return Station;
 };
+
+export default station;

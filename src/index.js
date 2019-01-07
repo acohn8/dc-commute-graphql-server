@@ -1,22 +1,22 @@
 import cors from 'cors';
+import distance from '@turf/distance';
 import express from 'express';
 import { ApolloServer, gql } from 'apollo-server-express';
-import * as models from './models/index';
-import fetchTrains from './api/metroHero';
-import fetchWeather from './api/weather';
-import addDistanceToStations from './helpers/closestStations';
+import { MetroHeroAPI } from './api/metroHero';
+import { DarkSkyAPI } from './api/weather';
+import models, { sequelize } from './models/sequelize';
 
 const app = express();
 app.use(cors());
 
-const schema = gql`
+const typeDefs = gql`
   type Query {
     stations: [Station]
     station(id: ID!): Station
     lines: [Line]
     line(id: ID!): Line
     weather(lat: Float!, lng: Float!): Weather
-    trainAndWeather(lat: Float!, lng: Float!): TrainAndWeather
+    train: [Train]
   }
 
   type Station {
@@ -27,7 +27,7 @@ const schema = gql`
     lines: [Line]
     codes: [StationCode]
     trains: [Train]
-    distance: Float
+    distance(lat: Float!, lng: Float!): Float
   }
 
   type StationCode {
@@ -44,15 +44,15 @@ const schema = gql`
   type Train {
     trainId: String
     realTrainId: String
-    car: String
-    destination: String
-    destinationCode: String
-    destinationName: String
-    group: String
-    line: String
-    locationCode: String
-    locationName: String
-    min: String
+    Car: String
+    Destination: String
+    DestinationCode: String
+    DestinationName: String
+    Group: String
+    Line: String
+    LocationCode: String
+    LocationName: String
+    Min: String
     parentMin: String
     minutesAway: Float
     maxMinutesAway: Float
@@ -136,67 +136,76 @@ const schema = gql`
     visibility: Float!
     ozone: Float!
   }
-
-  type TrainAndWeather {
-    stations: [Station]
-    weather: Weather
-  }
 `;
 
 const resolvers = {
   Query: {
-    stations: async () => {
-      const allStations = await models.Station.findAll({
+    stations: (parent, args, { models }) =>
+      models.Station.findAll({
         include: [
           { model: models.Line },
           { model: models.StationCode, as: 'codes' }
         ]
-      });
-      return allStations;
-    },
-    station: async (parent, { id }) => {
-      const station = await models.Station.findById(id, {
+      }),
+    station: (parent, { id }, { models }) =>
+      models.Station.findById(id, {
         include: [
           { model: models.Line },
           { model: models.StationCode, as: 'codes' }
         ]
+      }),
+    lines: (parent, args, { models }) =>
+      models.Line.findAll({
+        include: [
+          {
+            model: models.Station,
+            include: { model: models.StationCode, as: 'codes' }
+          }
+        ]
+      }),
+    line: (parent, { id }, { models }) =>
+      models.Line.findById(id, {
+        include: [
+          {
+            model: models.Station,
+            include: { model: models.StationCode, as: 'codes' }
+          }
+        ]
+      }),
+    weather: (parent, { lat, lng }, { dataSources }) =>
+      dataSources.DarkSkyAPI.getWeather(lat, lng)
+  },
+  Station: {
+    trains: async (station, args, { dataSources }) => {
+      const stationCodes = station.codes.map(code => code.station_code);
+      return dataSources.MetroHeroAPI.getTrainTimes(stationCodes);
+    },
+    distance: (station, { lat, lng }) => {
+      const stationCoords = [station.lng, station.lat];
+      const userCoords = [lng, lat];
+      return distance(userCoords, stationCoords, {
+        units: 'miles'
       });
-      const stationCodes = station.codes.map(
-        code => code.dataValues.station_code
-      );
-      const trains = await fetchTrains(stationCodes);
-      station.trains = trains;
-      return station;
-    },
-    lines: async () => {
-      const allLines = await models.Line.all({ include: models.Station });
-      return allLines;
-    },
-    line: async (parent, { id }) => {
-      const line = await models.Line.findById(id, {
-        include: [{ model: models.Station }]
-      });
-      return line;
-    },
-    weather: async (parent, { lat, lng }) => {
-      const weather = await fetchWeather(lat, lng);
-      return { weather };
-    },
-    trainAndWeather: async (parent, { lat, lng }) => {
-      const weather = await fetchWeather(lat, lng);
-      const stations = await addDistanceToStations(lat, lng);
-      return { weather: weather, stations: stations };
     }
   }
 };
 
 const server = new ApolloServer({
-  typeDefs: schema,
-  resolvers
+  typeDefs,
+  resolvers,
+  context: {
+    models
+  },
+  dataSources: () => ({
+    MetroHeroAPI: new MetroHeroAPI(),
+    DarkSkyAPI: new DarkSkyAPI()
+  })
 });
 
 server.applyMiddleware({ app, path: '/graphql' });
 
-app.listen({ port: 8000 }, () => {
-  console.log('Apollo Server on http://localhost:8000/graphql');
+sequelize.sync().then(async () => {
+  app.listen({ port: 8000 }, () => {
+    console.log('Apollo Server on http://localhost:8000/graphql');
+  });
 });
