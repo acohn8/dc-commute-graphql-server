@@ -4,6 +4,7 @@ import express from 'express';
 import { ApolloServer, gql } from 'apollo-server-express';
 import { MetroHeroAPI } from './api/metroHero';
 import { DarkSkyAPI } from './api/weather';
+import { MapboxAPI } from './api/mapBox';
 import models, { sequelize } from './models/sequelize';
 
 const app = express();
@@ -17,6 +18,7 @@ const typeDefs = gql`
     line(id: ID!): Line
     weather(lat: Float!, lng: Float!): Weather
     train: [Train]
+    geocode(query: String!): MapboxPlaceSearch
   }
 
   type Station {
@@ -24,9 +26,9 @@ const typeDefs = gql`
     name: String!
     lat: Float!
     lng: Float!
-    lines: [Line]
-    codes: [StationCode]
-    trains: [Train]
+    lines: [Line!]
+    codes: [StationCode!]
+    trains: [Train!]
     distance(lat: Float!, lng: Float!): Float
   }
 
@@ -38,7 +40,7 @@ const typeDefs = gql`
   type Line {
     id: ID!
     name: String!
-    stations: [Station]
+    stations: [Station!]
   }
 
   type Train {
@@ -136,6 +138,38 @@ const typeDefs = gql`
     visibility: Float!
     ozone: Float!
   }
+
+  type MapboxPlaceSearch {
+    type: String
+    query: [String]
+    features: [MapboxFeature]
+  }
+
+  type MapboxFeature {
+    id: String
+    type: String
+    place_type: [String]
+    relevance: Int
+    text: String
+    place_name: String
+    matching_place_name: String
+    center: [Float]
+    geometry: MapboxGeometry
+    address: String
+    context: [MapboxContext]
+  }
+
+  type MapboxGeometry {
+    type: String
+    coordinates: [Float]
+  }
+
+  type MapboxContext {
+    id: String
+    short_code: String
+    wikidata: String
+    text: String
+  }
 `;
 
 const resolvers = {
@@ -172,6 +206,8 @@ const resolvers = {
           }
         ]
       }),
+    geocode: (parent, { query }, { dataSources }) =>
+      dataSources.MapboxAPI.getLocation(query),
     weather: (parent, { lat, lng }, { dataSources }) =>
       dataSources.DarkSkyAPI.getWeather(lat, lng)
   },
@@ -198,7 +234,8 @@ const server = new ApolloServer({
   },
   dataSources: () => ({
     MetroHeroAPI: new MetroHeroAPI(),
-    DarkSkyAPI: new DarkSkyAPI()
+    DarkSkyAPI: new DarkSkyAPI(),
+    MapboxAPI: new MapboxAPI()
   })
 });
 
