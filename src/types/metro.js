@@ -2,6 +2,7 @@ export const typeDef = `
   type Station {
     id: ID!
     name: String!
+    address: String!
     lat: Float!
     lng: Float!
     lines: [Line!]

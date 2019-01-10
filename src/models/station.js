@@ -6,6 +6,7 @@ const station = (sequelize, DataTypes) => {
       autoIncrement: true
     },
     name: DataTypes.STRING,
+    address: DataTypes.STRING,
     lat: DataTypes.FLOAT,
     lng: DataTypes.FLOAT,
     created_at: DataTypes.DATE,

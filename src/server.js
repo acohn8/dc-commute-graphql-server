@@ -1,7 +1,7 @@
 import cors from 'cors';
 import distance from '@turf/distance';
 import express from 'express';
-import { ApolloServer, gql } from 'apollo-server-express';
+import { ApolloServer } from 'apollo-server-express';
 
 import { typeDef as Query } from './types/query';
 import { typeDef as Metro } from './types/metro';
@@ -11,6 +11,7 @@ import { MetroHeroAPI } from './api/metroHero';
 import { DarkSkyAPI } from './api/weather';
 import { MapboxAPI } from './api/mapBox';
 import models, { sequelize } from './models/sequelize';
+import sortedStations from './helpers/sortedStations';
 
 const app = express();
 app.use(cors());
@@ -24,6 +25,16 @@ const resolvers = {
           { model: models.StationCode, as: 'codes' }
         ]
       }),
+    sortedStations: async (parent, { lat, lng }, { models }) => {
+      const allStations = await models.Station.findAll({
+        include: [
+          { model: models.Line },
+          { model: models.StationCode, as: 'codes' }
+        ]
+      });
+      const sorted = sortedStations(allStations, [lng, lat]);
+      return sorted;
+    },
     station: (parent, { id }, { models }) =>
       models.Station.findById(id, {
         include: [
@@ -49,8 +60,8 @@ const resolvers = {
           }
         ]
       }),
-    geocode: (parent, { query }, { dataSources }) =>
-      dataSources.MapboxAPI.getLocation(query),
+    geocode: (parent, { location }, { dataSources }) =>
+      dataSources.MapboxAPI.getLocation(location),
     weather: (parent, { lat, lng }, { dataSources }) =>
       dataSources.DarkSkyAPI.getWeather(lat, lng)
   },

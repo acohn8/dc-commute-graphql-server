@@ -7,13 +7,15 @@ export class MapboxAPI extends RESTDataSource {
     this.baseURL = `https://api.mapbox.com/geocoding/v5/mapbox.places`;
   }
 
-  async getLocation(query) {
-    const response = await this.get(
-      `/${query}.json?access_token=${
-        process.env.MAPBOX_KEY
-      }&country=us&proximity=-77.0366%2C%2038.895&autocomplete=true&language=`
-    );
-    const parsedResponse = await JSON.parse(response);
-    return parsedResponse;
+  async getLocation(location) {
+    if (location) {
+      const response = await this.get(
+        `/${location}.json?access_token=${
+          process.env.MAPBOX_KEY
+        }&country=us&proximity=-77.0366%2C%2038.895&autocomplete=true&language=`
+      );
+      const parsedResponse = await JSON.parse(response);
+      return parsedResponse;
+    }
   }
 }
