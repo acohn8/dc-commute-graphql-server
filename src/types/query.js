@@ -1,6 +1,7 @@
 export const typeDef = `
   type Query {
     stations: [Station]
+    metroMetrics: [SystemMetric]
     sortedStations(lat: Float!, lng: Float!): [Station]
     station(id: ID!): Station
     lines: [Line]
