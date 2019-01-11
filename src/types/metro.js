@@ -23,8 +23,13 @@ export const typeDef = `
   }
 
   type TrainDirection {
+    line: String!
+    data: [TrainData!]
+  }
+
+  type TrainData {
     direction: Int!
-    data: [Train!]
+    trainData: [Train]
   }
 
   type Train {

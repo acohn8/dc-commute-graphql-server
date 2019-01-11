@@ -35,24 +35,35 @@ export class MetroHeroAPI extends RESTDataSource {
     return lineData;
   }
 
+  async getLineMetrics(metroLine) {
+    const systemData = await this.getSystemMetrics();
+    const lineData = systemData.find(line => line.line === metroLine).data;
+    return lineData;
+  }
+
   async getTrainTimes(codes) {
     const times = await this.get(`/stations/trains`);
-    const stationTimes = codes.map(code => times[code])[0];
-    const directionOne = stationTimes.filter(
-      train => train.directionNumber === 1
-    );
-    const directionTwo = stationTimes.filter(
-      train => train.directionNumber === 2
-    );
-    return [
-      {
-        direction: 1,
-        data: directionOne
-      },
-      {
-        direction: 2,
-        data: directionTwo
-      }
-    ];
+    const stationTimes = codes.map(code => times[code]).flat();
+    const lines = stationTimes.map(train => train.Line);
+    const uniqueLines = [...new Set(lines)];
+    const byLineAndDirection = uniqueLines.map(line => ({
+      line: line,
+      data: [
+        {
+          direction: 1,
+          trainData: stationTimes
+            .filter(train => train.Line === line && train.directionNumber === 1)
+            .flat()
+        },
+        {
+          direction: 2,
+          trainData: stationTimes
+            .filter(train => train.Line === line && train.directionNumber === 2)
+            .flat()
+        }
+      ]
+    }));
+    console.log(byLineAndDirection);
+    return byLineAndDirection;
   }
 }

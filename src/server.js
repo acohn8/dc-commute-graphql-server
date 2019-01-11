@@ -64,8 +64,8 @@ const resolvers = {
       dataSources.MapboxAPI.getLocation(location),
     weather: (parent, { lat, lng }, { dataSources }) =>
       dataSources.DarkSkyAPI.getWeather(lat, lng),
-    metroMetrics: (parent, args, { dataSources }) =>
-      dataSources.MetroHeroAPI.getSystemMetrics()
+    lineMetrics: (parent, { line }, { dataSources }) =>
+      dataSources.MetroHeroAPI.getLineMetrics(line)
   },
   Station: {
     trains: async (station, args, { dataSources }) => {
