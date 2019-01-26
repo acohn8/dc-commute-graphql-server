@@ -1,12 +1,17 @@
 import cors from 'cors';
 import distance from '@turf/distance';
 import express from 'express';
+import bcrypt from 'bcrypt';
+import jwt from 'express-jwt';
+import jsonwebtoken from 'jsonwebtoken';
 import { ApolloServer } from 'apollo-server-express';
+require('dotenv').config();
 
 import { typeDef as Query } from './types/query';
 import { typeDef as Metro } from './types/metro';
 import { typeDef as Weather } from './types/weather';
 import { typeDef as Mapbox } from './types/mapbox';
+import { typeDef as User } from './types/user';
 import { MetroHeroAPI } from './api/metroHero';
 import { DarkSkyAPI } from './api/weather';
 import { MapboxAPI } from './api/mapBox';
@@ -14,10 +19,16 @@ import models, { sequelize } from './models/sequelize';
 import sortedStations from './helpers/sortedStations';
 
 const app = express();
-app.use(cors());
+
+const auth = jwt({
+  secret: process.env.JWT_SECRET,
+  credentialsRequired: false
+});
+app.use(auth, cors());
 
 const resolvers = {
   Query: {
+    users: (parent, args, { models }) => models.User.findAll(),
     stations: (parent, args, { models }) =>
       models.Station.findAll({
         include: [
@@ -77,11 +88,43 @@ const resolvers = {
         units: 'miles'
       });
     }
+  },
+  Mutation: {
+    signup: async (_, { email, password }) => {
+      const user = await models.User.create({
+        email,
+        password: await bcrypt.hash(password, 10)
+      });
+      return jsonwebtoken.sign({ email: user.email }, process.env.JWT_SECRET, {
+        expiresIn: '1y'
+      });
+    },
+    login: async (_, { email, password }) => {
+      const user = await models.User.findOne({ where: { email } });
+      if (!user) {
+        throw new Error('No user found');
+      }
+      const valid = await bcrypt.compare(password, user.password);
+      if (!valid) {
+        throw new Error('Incorrect password');
+      }
+      return jsonwebtoken.sign(
+        {
+          id: user.id,
+          email: user.email,
+          address: user.address,
+          lat: user.lat,
+          lng: user.lng
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '1d' }
+      );
+    }
   }
 };
 
 const server = new ApolloServer({
-  typeDefs: [Query, Metro, Weather, Mapbox],
+  typeDefs: [Query, Metro, Weather, Mapbox, User],
   resolvers,
   context: {
     models

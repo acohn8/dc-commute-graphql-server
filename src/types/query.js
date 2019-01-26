@@ -1,5 +1,6 @@
 export const typeDef = `
   type Query {
+    users: [User]
     stations: [Station]
     sortedStations(lat: Float!, lng: Float!): [Station]
     station(id: ID!): Station
@@ -8,5 +9,9 @@ export const typeDef = `
     weather(lat: Float!, lng: Float!): Weather
     train: [Train]
     geocode(location: String!): MapboxPlaceSearch
+  }
+  type Mutation {
+    signup(email: String!, password: String!): String!
+    login(email: String!, password: String!): String!
   }
 `;

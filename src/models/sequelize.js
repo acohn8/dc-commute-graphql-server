@@ -17,6 +17,7 @@ const sequelize = new Sequelize(
 );
 
 const models = {
+  User: sequelize.import('./user'),
   Station: sequelize.import('./station'),
   Line: sequelize.import('./line'),
   StationCode: sequelize.import('./stationCode'),
