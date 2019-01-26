@@ -7,7 +7,7 @@ export const typeDef = `
     lng: Float!
     lines: [Line!]
     codes: [StationCode!]
-    trains: [Train!]
+    trains: [TrainDirection]
     distance(lat: Float!, lng: Float!): Float
   }
 
@@ -20,6 +20,16 @@ export const typeDef = `
     id: ID!
     name: String!
     stations: [Station!]
+  }
+
+  type TrainDirection {
+    line: String!
+    data: [TrainData!]
+  }
+
+  type TrainData {
+    direction: Int!
+    trainData: [Train]
   }
 
   type Train {
@@ -58,5 +68,69 @@ export const typeDef = `
     lon: Float
     direction: Int
     observedDate: String
+  }
+
+  type SystemMetric {
+    line: String
+    data: LineMetricData
+  }
+
+  type LineMetricData {
+    lineCode: String
+    expectedNumTrains: Int
+    numTrains: Int
+    numEightCarTrains: Int
+    numDelayedTrains: Int
+    numCars: Int
+    averageTrainDelay: Int
+    medianTrainDelay: Int
+    minimumTrainDelay: Int
+    maximumTrainDelay: Int
+    averageMinimumHeadways: Float
+    averageTrainFrequency: Float
+    expectedTrainFrequency: Int
+    averagePlatformWaitTime: Float
+    expectedPlatformWaitTime: Int
+    trainFrequencyStatus: String
+    platformWaitTimeTrendStatus: String
+    averageHeadwayAdherence: Float
+    averageScheduleAdherence: Float
+    standardDeviationTrainFrequency: Float
+    expectedStandardDeviationTrainFrequency: Float
+    directionMetricsByDirection: [LineDirection]
+    date: String
+  }
+
+  type LineDirection {
+    direction: Int
+    data: LineDirectionMetric
+  }
+
+  type LineDirectionMetric {
+    lineCode: String
+    directionNumber: Int
+    direction: String
+    towardsStationName: String
+    expectedNumTrains: Int
+    numTrains: Int
+    numEightCarTrains: Int
+    numDelayedTrains: Int
+    numCars: Int
+    averageTrainDelay: Int
+    medianTrainDelay: Int
+    minimumTrainDelay: Int
+    maximumTrainDelay: Int
+    averageMinimumHeadways: Float
+    averageTrainFrequency: Float
+    expectedTrainFrequency: Int
+    averagePlatformWaitTime: Float
+    expectedPlatformWaitTime: Int
+    trainFrequencyStatus: String
+    platformWaitTimeTrendStatus: String
+    averageHeadwayAdherence: Float
+    averageScheduleAdherence: Float
+    standardDeviationTrainFrequency: Float
+    expectedStandardDeviationTrainFrequency: Float
+    date: String
   }
 `;

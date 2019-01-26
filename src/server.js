@@ -74,7 +74,9 @@ const resolvers = {
     geocode: (parent, { location }, { dataSources }) =>
       dataSources.MapboxAPI.getLocation(location),
     weather: (parent, { lat, lng }, { dataSources }) =>
-      dataSources.DarkSkyAPI.getWeather(lat, lng)
+      dataSources.DarkSkyAPI.getWeather(lat, lng),
+    lineMetrics: (parent, { line }, { dataSources }) =>
+      dataSources.MetroHeroAPI.getLineMetrics(line)
   },
   Station: {
     trains: async (station, args, { dataSources }) => {
